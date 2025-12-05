@@ -20,7 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"os"
+
 	"path/filepath"
 	"strings"
 	"time"
@@ -34,7 +34,7 @@ import (
 	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/core/logger"
 	ksv2 "github.com/kubesphere/kubekey/v3/cmd/kk/pkg/kubesphere/v2"
 	ksv3 "github.com/kubesphere/kubekey/v3/cmd/kk/pkg/kubesphere/v3"
-	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/version/kubesphere"
+
 	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/version/kubesphere/templates"
 )
 
@@ -200,19 +200,11 @@ func (s *Setup) Execute(runtime connector.Runtime) error {
 		}
 	}
 
-	_, ok := kubesphere.CNSource[s.KubeConf.Cluster.KubeSphere.Version]
-	if ok && (os.Getenv("KKZONE") == "cn" || s.KubeConf.Cluster.Registry.PrivateRegistry == "registry.cn-beijing.aliyuncs.com") {
-		if _, err := runtime.GetRunner().SudoCmd(
-			fmt.Sprintf("sed -i '/zone/s/\\:.*/\\: %s/g' %s", "cn", filePath),
-			false); err != nil {
-			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("add kubekey zone: %s failed", s.KubeConf.Cluster.Registry.PrivateRegistry))
-		}
-	} else {
-		if _, err := runtime.GetRunner().SudoCmd(
-			fmt.Sprintf("sed -i '/zone/d' %s", filePath),
-			false); err != nil {
-			return errors.Wrap(errors.WithStack(err), fmt.Sprintf("remove kubekey zone failed"))
-		}
+	// always remove zone hint and rely solely on user-configured registry
+	if _, err := runtime.GetRunner().SudoCmd(
+		fmt.Sprintf("sed -i '/zone/d' %s", filePath),
+		false); err != nil {
+		return errors.Wrap(errors.WithStack(err), fmt.Sprintf("remove kubekey zone failed"))
 	}
 
 	switch s.KubeConf.Cluster.Kubernetes.ContainerManager {

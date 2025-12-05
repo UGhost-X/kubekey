@@ -18,7 +18,7 @@ package kubesphere
 
 import (
 	"fmt"
-	"os"
+
 	"path/filepath"
 
 	"github.com/kubesphere/kubekey/v3/cmd/kk/pkg/common"
@@ -126,37 +126,26 @@ func MirrorRepo(kubeConf *common.KubeConf) string {
 	namespaceOverride := kubeConf.Cluster.Registry.NamespaceOverride
 	version := kubeConf.Cluster.KubeSphere.Version
 
-	_, ok := kubesphere.CNSource[version]
-	if ok && os.Getenv("KKZONE") == "cn" {
-		if repo == "" {
-			repo = "registry.cn-beijing.aliyuncs.com/kubesphereio"
-		} else if len(namespaceOverride) != 0 {
-			repo = fmt.Sprintf("%s/%s", repo, namespaceOverride)
-		} else {
-			repo = fmt.Sprintf("%s/kubesphere", repo)
+	if repo != "" {
+		if len(namespaceOverride) != 0 {
+			return fmt.Sprintf("%s/%s", repo, namespaceOverride)
 		}
-	} else {
-		if repo == "" {
-			_, latest := kubesphere.LatestRelease(version)
-			_, dev := kubesphere.DevRelease(version)
-			_, stable := kubesphere.StabledVersionSupport(version)
-			switch {
-			case stable:
-				repo = "kubesphere"
-			case dev:
-				repo = "kubespheredev"
-			case latest:
-				repo = "kubespheredev"
-			default:
-				repo = "kubesphere"
-			}
-		} else if len(namespaceOverride) != 0 {
-			repo = fmt.Sprintf("%s/%s", repo, namespaceOverride)
-		} else {
-			repo = fmt.Sprintf("%s/kubesphere", repo)
-		}
+		return fmt.Sprintf("%s/kubesphere", repo)
 	}
-	return repo
+
+	_, latest := kubesphere.LatestRelease(version)
+	_, dev := kubesphere.DevRelease(version)
+	_, stable := kubesphere.StabledVersionSupport(version)
+	switch {
+	case stable:
+		return "kubesphere"
+	case dev:
+		return "kubespheredev"
+	case latest:
+		return "kubespheredev"
+	default:
+		return "kubesphere"
+	}
 }
 
 type CheckResultModule struct {
